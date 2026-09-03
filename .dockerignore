@@ -1,0 +1,41 @@
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pytest_cache/
+
+# Virtual environments and env files
+venv/
+.env
+.env.*
+
+# Git
+.git
+.gitignore
+
+# Jupyter notebooks and data
+*.ipynb
+data/
+raw_data/
+
+# Model artifacts
+*.pth
+*.pt
+*.h5
+*.keras
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Docker files
+.dockerignore
+
+# Logs
+*.log
+
+# Node
+node_modules/
