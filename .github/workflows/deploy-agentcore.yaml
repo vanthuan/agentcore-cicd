@@ -64,7 +64,7 @@ jobs:
                 python -m pip install --upgrade pip
                 pip install -r app/requirements.txt
                 pip install boto3
-                
+
             - name: Dump GitHub Context for OIDC Verification
               run: |
                 echo "Actor: ${{ github.actor }}"
@@ -73,7 +73,7 @@ jobs:
                 echo "Event Name: ${{ github.event_name }}"
 
             - name: Configure AWS Credentials
-              uses: aws-actions/configure-aws-credentials@d0834ad3a60a024346910e522a81b0002bd37fea
+              uses: aws-actions/configure-aws-credentials@v6
               with:
                 role-to-assume: ${{secrets.AWS_ROLE_ARN}}
                 role-session-name: GitHubActions-AgentCore-Deploy
@@ -138,7 +138,7 @@ jobs:
 
             - name: Deploy to Agentcore Runtime
               run: |
-                python scripts/deploy_agentcore.py \
+                python scripts/deploy_agent_to_dockerimg.py \
                     --agent-name "${{env.AGENT_NAME}}" \
                     --region "${{env.AWS_REGION}}" \
                     --container-uri "${{env.CONTAINER_URI}}"
