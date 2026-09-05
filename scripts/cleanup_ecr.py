@@ -30,8 +30,8 @@ from boto3 import client as boto3_client
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
@@ -39,24 +39,24 @@ logger = logging.getLogger(__name__)
 def cleanup_ecr_images(region, keep_count=9, repository_name=None):
     """
     Clean up old ECR images while preserving recent ones.
-    
+
     This function identifies AgentCore-related ECR repositories and removes
     older container images to manage storage costs. It preserves the most
     recent images based on the keep_count parameter.
-    
+
     Args:
         region (str): AWS region containing the ECR repositories
         keep_count (int): Number of recent images to preserve (default: 9)
-        
+
     Returns:
         None
-        
+
     Note:
         Only processes repositories with 'agentcore' in the name for safety.
     """
     # Initialize ECR client for the specified region
     ecr_client = boto3_client("ecr", region_name=region)
-    
+
     # Check if specific repository exists
     try:
         ecr_client.describe_repositories(repositoryNames=[repository_name])
@@ -69,7 +69,7 @@ def cleanup_ecr_images(region, keep_count=9, repository_name=None):
 def process_repository(ecr_client, repo_name, keep_count):
     """
     Process a single ECR repository for image cleanup.
-    
+
     Args:
         ecr_client: Boto3 ECR client
         repo_name (str): Repository name to process
@@ -78,35 +78,37 @@ def process_repository(ecr_client, repo_name, keep_count):
     try:
         # Get all images in the repository
         images = ecr_client.describe_images(repositoryName=repo_name)
-        
+
         # Sort images by push timestamp (newest first)
         sorted_images = sorted(
             images["imageDetails"],
             key=lambda x: x.get("imagePushedAt", 0),  # Use 0 if no timestamp
-            reverse=True  # Newest first
+            reverse=True,  # Newest first
         )
-        
+
         # Identify images to delete (beyond keep_count)
         images_to_delete = sorted_images[keep_count:]
-        
+
         if images_to_delete:
             # Prepare image identifiers for batch deletion
             image_ids = []
             for image in images_to_delete:
                 if "imageDigest" in image:
                     image_ids.append({"imageDigest": image["imageDigest"]})
-            
+
             if image_ids:
                 # Perform batch deletion
                 ecr_client.batch_delete_image(
-                    repositoryName=repo_name,
-                    imageIds=image_ids
+                    repositoryName=repo_name, imageIds=image_ids
                 )
                 logger.info(f"Deleted {len(image_ids)} old images from {repo_name}")
                 logger.info(f"Kept {min(len(sorted_images), keep_count)} recent images")
         else:
-            logger.info(f"Repository {repo_name} has {len(sorted_images)} images (within keep limit)")
-            
+            logger.info(
+                f"Repository {repo_name} has {len(sorted_images)} "
+                "images (within keep limit)"
+            )
+
     except Exception as e:
         logger.error(f"Error processing repository {repo_name}: {e}")
 
@@ -114,7 +116,7 @@ def process_repository(ecr_client, repo_name, keep_count):
 def main():
     """
     Main function to handle command-line arguments and initiate cleanup.
-    
+
     Parses command-line arguments and calls cleanup_ecr_images with
     the specified region and retention count.
     """
@@ -130,24 +132,30 @@ Safety Features:
 - Only processes repositories with 'agentcore' in the name
 - Preserves the most recent images based on push timestamp
 - Uses batch operations for efficient deletion
-        """
+        """,
     )
-    
-    parser.add_argument("--region", required=True,
-                       help="AWS region containing ECR repositories")
-    parser.add_argument("--keep-count", type=int, default=9,
-                       help="Number of recent images to keep (default: 9)")
-    parser.add_argument("--repository-name", required=True,
-                       help="ECR repository name to clean up")
-    
+
+    parser.add_argument(
+        "--region", required=True, help="AWS region containing ECR repositories"
+    )
+    parser.add_argument(
+        "--keep-count",
+        type=int,
+        default=9,
+        help="Number of recent images to keep (default: 9)",
+    )
+    parser.add_argument(
+        "--repository-name", required=True, help="ECR repository name to clean up"
+    )
+
     args = parser.parse_args()
-    
+
     logger.info(f"Starting ECR cleanup in {args.region}")
     logger.info(f"Keeping {args.keep_count} most recent images per repository")
-    
+
     # Perform the cleanup operation
     cleanup_ecr_images(args.region, args.keep_count, args.repository_name)
-    
+
     logger.info("ECR cleanup completed!")
 
 
